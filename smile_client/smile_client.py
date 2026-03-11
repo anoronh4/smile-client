@@ -39,7 +39,7 @@ class SmileClient(object):
         self.ssl_keyfile = smile_settings.get("NATS_SSL_KEYFILE")
         self.nats_durable = smile_settings.get("NATS_DURABLE")
         self.filter_subject = smile_settings.get("NATS_FILTER_SUBJECT")
-        self.nats_root_ca = smile_settings.get("NATS_ROOT_CA")
+        self.nats_root_ca = smile_settings.get("NATS_ROOT_CA",None)
         self.client_timeout = smile_settings.get("CLIENT_TIMEOUT", 3600.0)
         self.handler_path = smile_settings.get('CALLBACK', "smile_client.default_callback.smile_callback")
         self._stop_event = asyncio.Event()
@@ -74,8 +74,12 @@ class SmileClient(object):
 
         if self.ssl_certfile and self.ssl_keyfile:
             ssl_ctx = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
+            print(self.nats_root_ca)
             if self.nats_root_ca:
                 ssl_ctx.load_verify_locations(cafile=self.nats_root_ca)
+            else:
+                ssl_ctx.check_hostname = False
+                ssl_ctx.verify_mode = ssl.CERT_NONE
             ssl_ctx.load_cert_chain(certfile=self.ssl_certfile, keyfile=self.ssl_keyfile)
             options["tls"] = ssl_ctx
 

@@ -74,7 +74,6 @@ class SmileClient(object):
 
         if self.ssl_certfile and self.ssl_keyfile:
             ssl_ctx = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
-            print(self.nats_root_ca)
             if self.nats_root_ca:
                 ssl_ctx.load_verify_locations(cafile=self.nats_root_ca)
             else:
@@ -154,11 +153,13 @@ class SmileClient(object):
         def wrapped_callback(message):
             try:
                 msg_subject = message.subject
-                data = json.loads(message.data.decode())
+                try:
+                    data = json.loads(message.data.decode())
+                except json.JSONDecodeError:
+                    logger.warning(f"JSON decoding failed for message on '{message.subject}', passing raw bytes to callback")
+                    data = message.data
                 smile_message_object = SmileMessage(msg_subject, data)
                 callback(smile_message_object)
-            except json.JSONDecodeError:
-                logger.error(f"Invalid JSON received: {message}")
             except Exception as e:
                 logger.error(f"Error processing message: {e}")
 
